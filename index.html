@@ -34,6 +34,7 @@
       max-width: 650px;
       width: 90%;
       animation: fade-in 2s ease-in-out;
+      position: relative; /* Container needs to be relative for absolute positioning of the buttons */
     }
     @keyframes fade-in {
       from { opacity: 0; transform: translateY(-20px); }
@@ -61,6 +62,7 @@
       justify-content: center;
       gap: 20px;
       margin-top: 30px;
+      position: relative;
     }
     .btn {
       padding: 15px 30px;
@@ -78,11 +80,15 @@
     #yes-btn {
       background-color: #ff69b4;
       color: #fff;
+      position: relative; /* Keep Yes button in place */
+      z-index: 10;
     }
     #yes-btn:hover { background-color: #ff1493; }
     #no-btn {
       background-color: #f0f0f0;
       color: #333;
+      position: absolute; /* Absolute position to move it */
+      transition: transform 0.3s ease, left 0s, top 0s; /* Add transition for smooth movement */
     }
     #no-btn:hover { background-color: #ddd; }
 
@@ -95,6 +101,7 @@
       background: rgba(0,0,0,0.7);
       justify-content: center;
       align-items: center;
+      z-index: 20;
     }
     .modal-content {
       background: #ffc0cb; /* Pink Box */
@@ -137,19 +144,17 @@
         Ab batao kya tum mere is junon ko apne hontho pe utharne dogi?🥺
     </p>
 
-    <!-- Web3Forms form -->
     <form id="proposal-form" action="https://api.web3forms.com/submit" method="POST">
       <input type="hidden" name="apikey" value="59ac3e70-b7eb-42f3-8a0e-6020c3cdccb8">
       <input type="hidden" name="response" id="response-input">
 
       <div class="buttons">
         <button id="yes-btn" type="submit" class="btn">Yes 😘</button>
-        <button id="no-btn" type="submit" class="btn">No 🙅‍♀️</button>
+        <button id="no-btn" type="button" class="btn">No 🙅‍♀️</button>
       </div>
     </form>
   </div>
 
-  <!-- ✅ Custom Modal -->
   <div class="modal" id="customModal">
     <div class="modal-content">
       <p id="modal-message"></p>
@@ -164,14 +169,41 @@
     const modal = document.getElementById('customModal');
     const modalMessage = document.getElementById('modal-message');
     const proposalForm = document.getElementById('proposal-form');
+    const container = document.querySelector('.container');
+
+    let noClickCount = 0;
+    let isModalShowing = false;
 
     function showModal(message) {
+      if (isModalShowing) return;
+      isModalShowing = true;
       modalMessage.textContent = message;
       modal.style.display = "flex";
+      // Hide the buttons when the modal is active
+      yesBtn.style.display = 'none';
+      noBtn.style.display = 'none';
     }
 
     function closeModal() {
       modal.style.display = "none";
+      isModalShowing = false;
+      // You can add logic here to show the buttons again if needed,
+      // but in this case, the form is submitted anyway.
+    }
+    
+    function moveNoButton() {
+        if (isModalShowing) return;
+        const containerRect = container.getBoundingClientRect();
+        const noBtnRect = noBtn.getBoundingClientRect();
+
+        const maxLeft = containerRect.width - noBtnRect.width - 20;
+        const maxTop = containerRect.height - noBtnRect.height - 20;
+
+        const newX = Math.random() * maxLeft;
+        const newY = Math.random() * maxTop;
+
+        noBtn.style.left = `${newX}px`;
+        noBtn.style.top = `${newY}px`;
     }
 
     yesBtn.addEventListener('click', (e) => {
@@ -181,12 +213,35 @@
       proposalForm.submit();
     });
 
+    // Use mouseover instead of click to make the button move away *before* the click happens
+    noBtn.addEventListener('mouseover', (e) => {
+        // Only move if the modal is not already showing
+        if (!isModalShowing) {
+            moveNoButton();
+        }
+    });
+
+    // Add a click event listener to count clicks and show the message
     noBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      responseInput.value = "NO";
-      showModal("Inkar ka toh sawal hi paida nahi hota... Tumhare honth mein chum ke rahoga 💋");
-      proposalForm.submit();
+        // Prevent the default form submission
+        e.preventDefault();
+
+        // Increment the counter only if the modal is not already showing
+        if (!isModalShowing) {
+            noClickCount++;
+            
+            // After 3 attempts, show the modal message
+            if (noClickCount >= 3) {
+                showModal("Inkar ka toh sawal hi paida nahi hota... Tumhare honth mein chum ke rahoga 💋");
+                
+                // Submit the form only after showing the message for the final time
+                setTimeout(() => {
+                    proposalForm.submit();
+                }, 2000); // Wait 2 seconds before submitting
+            }
+        }
     });
   </script>
 </body>
 </html>
+
